@@ -361,3 +361,8 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+# Configuracion local con credenciales
+/AbarrotesControl.Api/json.json
+
+# Respaldos locales de configuracion
+*.backup-local

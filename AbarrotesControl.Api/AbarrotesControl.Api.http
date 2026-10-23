@@ -1,6 +1,255 @@
-@AbarrotesControl.Api_HostAddress = http://localhost:5171
+@host = https://localhost:7091
+# Ajusta los ids a registros existentes; UsuarioSemillaId debe existir en usuarios.
+@categoriaId = 1
+@proveedorId = 1
+@productoId = 1
+@entradaId = 1
+# Cambia el nombre antes de repetir el caso válido.
+@nombreProducto = Producto prueba CU02
+@idInexistente = 2147483647
 
-GET {{AbarrotesControl.Api_HostAddress}}/weatherforecast/
+### CU-02: crear producto válido (201)
+POST {{host}}/api/productos
+Accept: application/json
+Content-Type: application/json
+
+{
+  "nombre": "{{nombreProducto}}",
+  "categoriaId": {{categoriaId}},
+  "precioVenta": 12.5,
+  "stockMinimo": 5,
+  "fechaVencimiento": null
+}
+
+### Listar productos (200)
+GET {{host}}/api/productos
 Accept: application/json
 
-###
+### Consultar producto existente (200)
+GET {{host}}/api/productos/{{productoId}}
+Accept: application/json
+
+### Listar categorías (200)
+GET {{host}}/api/categorias
+Accept: application/json
+
+### CU-03: registrar entrada válida (201)
+POST {{host}}/api/entradas
+Accept: application/json
+Content-Type: application/json
+
+{
+  "proveedorId": {{proveedorId}},
+  "fechaEntrada": "2026-01-01",
+  "nroDocumento": "ENT-001",
+  "detalles": [
+    {
+      "productoId": {{productoId}},
+      "cantidad": 10,
+      "costoUnitario": 8
+    }
+  ]
+}
+
+### Consultar entrada existente (200); usa el id devuelto por el POST
+GET {{host}}/api/entradas/{{entradaId}}
+Accept: application/json
+
+### Listar proveedores activos (200)
+GET {{host}}/api/proveedores
+Accept: application/json
+
+### RN-01: ejecutar después del POST válido, mismo nombre (409)
+POST {{host}}/api/productos
+Accept: application/json
+Content-Type: application/json
+
+{
+  "nombre": "{{nombreProducto}}",
+  "categoriaId": {{categoriaId}},
+  "precioVenta": 12.5,
+  "stockMinimo": 5,
+  "fechaVencimiento": null
+}
+
+### RN-02: precio cero (400)
+POST {{host}}/api/productos
+Accept: application/json
+Content-Type: application/json
+
+{
+  "nombre": "{{nombreProducto}}",
+  "categoriaId": {{categoriaId}},
+  "precioVenta": 0,
+  "stockMinimo": 5,
+  "fechaVencimiento": null
+}
+
+### RN-03: stock mínimo negativo (400)
+POST {{host}}/api/productos
+Accept: application/json
+Content-Type: application/json
+
+{
+  "nombre": "{{nombreProducto}}",
+  "categoriaId": {{categoriaId}},
+  "precioVenta": 12.5,
+  "stockMinimo": -1,
+  "fechaVencimiento": null
+}
+
+### RN-04: vencimiento pasado (400)
+POST {{host}}/api/productos
+Accept: application/json
+Content-Type: application/json
+
+{
+  "nombre": "{{nombreProducto}}",
+  "categoriaId": {{categoriaId}},
+  "precioVenta": 12.5,
+  "stockMinimo": 5,
+  "fechaVencimiento": "2000-01-01"
+}
+
+### RN-06: sin detalles (400)
+POST {{host}}/api/entradas
+Accept: application/json
+Content-Type: application/json
+
+{
+  "proveedorId": {{proveedorId}},
+  "fechaEntrada": "2026-01-01",
+  "nroDocumento": "ENT-001",
+  "detalles": []
+}
+
+### RN-06: cantidad cero (400)
+POST {{host}}/api/entradas
+Accept: application/json
+Content-Type: application/json
+
+{
+  "proveedorId": {{proveedorId}},
+  "fechaEntrada": "2026-01-01",
+  "nroDocumento": "ENT-001",
+  "detalles": [
+    {
+      "productoId": {{productoId}},
+      "cantidad": 0,
+      "costoUnitario": 8
+    }
+  ]
+}
+
+### RN-06: cantidad fraccionaria (400)
+POST {{host}}/api/entradas
+Accept: application/json
+Content-Type: application/json
+
+{
+  "proveedorId": {{proveedorId}},
+  "fechaEntrada": "2026-01-01",
+  "nroDocumento": "ENT-001",
+  "detalles": [
+    {
+      "productoId": {{productoId}},
+      "cantidad": 1.5,
+      "costoUnitario": 8
+    }
+  ]
+}
+
+### RN-06: producto repetido (400)
+POST {{host}}/api/entradas
+Accept: application/json
+Content-Type: application/json
+
+{
+  "proveedorId": {{proveedorId}},
+  "fechaEntrada": "2026-01-01",
+  "nroDocumento": "ENT-001",
+  "detalles": [
+    {
+      "productoId": {{productoId}},
+      "cantidad": 10,
+      "costoUnitario": 8
+    },
+    {
+      "productoId": {{productoId}},
+      "cantidad": 10,
+      "costoUnitario": 8
+    }
+  ]
+}
+
+### RN-07: costo cero (400)
+POST {{host}}/api/entradas
+Accept: application/json
+Content-Type: application/json
+
+{
+  "proveedorId": {{proveedorId}},
+  "fechaEntrada": "2026-01-01",
+  "nroDocumento": "ENT-001",
+  "detalles": [
+    {
+      "productoId": {{productoId}},
+      "cantidad": 10,
+      "costoUnitario": 0
+    }
+  ]
+}
+
+### RN-08: proveedor inexistente (404)
+POST {{host}}/api/entradas
+Accept: application/json
+Content-Type: application/json
+
+{
+  "proveedorId": {{idInexistente}},
+  "fechaEntrada": "2026-01-01",
+  "nroDocumento": "ENT-001",
+  "detalles": [
+    {
+      "productoId": {{productoId}},
+      "cantidad": 10,
+      "costoUnitario": 8
+    }
+  ]
+}
+
+### RN-08: producto inexistente (404)
+POST {{host}}/api/entradas
+Accept: application/json
+Content-Type: application/json
+
+{
+  "proveedorId": {{proveedorId}},
+  "fechaEntrada": "2026-01-01",
+  "nroDocumento": "ENT-001",
+  "detalles": [
+    {
+      "productoId": {{idInexistente}},
+      "cantidad": 10,
+      "costoUnitario": 8
+    }
+  ]
+}
+
+### RN-11: fecha futura (400)
+POST {{host}}/api/entradas
+Accept: application/json
+Content-Type: application/json
+
+{
+  "proveedorId": {{proveedorId}},
+  "fechaEntrada": "9999-12-31",
+  "nroDocumento": "ENT-001",
+  "detalles": [
+    {
+      "productoId": {{productoId}},
+      "cantidad": 10,
+      "costoUnitario": 8
+    }
+  ]
+}

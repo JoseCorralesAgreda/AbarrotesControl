@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AbarrotesControl · Inventario</title>
+  <link rel="stylesheet" href="/styles.css">
+  <script src="/app.js" defer></script>
+</head>
+<body>
+  <aside class="sidebar">
+    <a class="brand" href="/">AC<span>Abarrotes<span class="brand-light">Control</span></span></a>
+    <p class="eyebrow">TU TIENDA, EN ORDEN</p>
+    <nav aria-label="Principal">
+      <button class="nav active" data-view="inventario">Inventario</button>
+      <button class="nav" data-view="producto">Nuevo producto</button>
+      <button class="nav" data-view="entrada">Registrar entrada</button>
+      <button class="nav" data-view="consulta">Consultar entrada</button>
+    </nav>
+    <div class="sidebar-footer">Control de mercadería<br><span>Productos · Existencias · Entradas</span></div>
+  </aside>
+  <main>
+    <header><div><p class="eyebrow">ABARROTES / OPERACIONES</p><h1 id="page-title">Inventario</h1></div><button id="refresh" class="secondary">Actualizar datos</button></header>
+    <div id="notice" role="status" aria-live="polite" hidden></div>
+    <section id="inventario" class="view">
+      <div class="stats">
+        <article><span>Productos registrados</span><strong id="count">—</strong></article>
+        <article><span>Unidades disponibles</span><strong id="units">—</strong></article>
+        <article class="attention"><span>Productos con stock bajo</span><strong id="low">—</strong></article>
+      </div>
+      <div class="panel">
+        <div class="panel-header"><div><h2>Tus productos</h2><p>Consulta existencias y encuentra lo que necesitas reponer.</p></div><button data-view="producto">+ Nuevo producto</button></div>
+        <div class="filters"><label>Buscar producto<input id="search" type="search" placeholder="Nombre del producto…"></label><label>Categoría<select id="filter-category"><option value="">Todas las categorías</option></select></label><label class="checkbox"><input id="filter-low" type="checkbox">Solo stock bajo</label></div>
+        <div class="table-wrap"><table><thead><tr><th>Producto</th><th>Categoría</th><th>Precio</th><th>Stock / mínimo</th><th>Vencimiento</th><th>Estado</th></tr></thead><tbody id="products"><tr><td colspan="6">Cargando inventario…</td></tr></tbody></table></div>
+      </div>
+    </section>
+    <section id="producto" class="view" hidden>
+      <div class="panel form-panel"><h2>Agrega un producto al inventario</h2><p>El stock comienza en cero. Registra una entrada para sumar existencias.</p>
+        <form id="product-form">
+          <div class="form-grid">
+            <label class="wide">Nombre<input name="nombre" maxlength="120" required autocomplete="off"></label>
+            <label>Categoría<select name="categoriaId" id="product-category" required><option value="">Selecciona una categoría</option></select></label>
+            <label>Precio de venta<input name="precioVenta" type="number" min="0.01" max="99999999.99" step="0.01" required></label>
+            <label>Stock mínimo<input name="stockMinimo" type="number" min="0" max="2147483647" step="1" value="0" required></label>
+            <label>Fecha de vencimiento <small>(opcional)</small><input name="fechaVencimiento" type="date"></label>
+          </div>
+          <div class="actions"><button type="submit">Guardar producto</button><button type="button" class="secondary" data-view="inventario">Volver al inventario</button></div>
+        </form>
+      </div>
+    </section>
+    <section id="entrada" class="view" hidden>
+      <div class="panel"><h2>Recibe mercadería</h2><p>Al guardar, las cantidades se suman al stock de cada producto.</p>
+        <form id="entry-form">
+          <div class="form-grid">
+            <label>Proveedor<select name="proveedorId" id="entry-provider" required><option value="">Selecciona un proveedor</option></select></label>
+            <label>Fecha de entrada<input name="fechaEntrada" type="date" min="1000-01-01" required></label>
+            <label class="wide">Número de documento <small>(opcional)</small><input name="nroDocumento" maxlength="50"></label>
+          </div>
+          <div class="panel-header"><h3>Detalle de mercadería</h3><button id="add-detail" type="button" class="secondary">+ Agregar producto</button></div>
+          <div id="details"></div>
+          <div class="entry-total">Total de compra <strong id="entry-total">0,00</strong></div>
+          <div class="actions"><button type="submit">Registrar entrada</button></div>
+        </form>
+      </div>
+    </section>
+    <section id="consulta" class="view" hidden>
+      <div class="panel"><h2>Consulta una entrada</h2><p>Ingresa el número de entrada generado al registrar la mercadería.</p><form id="lookup-form" class="lookup"><label>Número de entrada<input name="id" type="number" min="1" max="2147483647" step="1" required></label><button type="submit">Consultar</button></form></div>
+      <div id="entry-result" class="panel" hidden></div>
+    </section>
+  </main>
+</body>
+</html>
