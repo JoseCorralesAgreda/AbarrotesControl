@@ -1,0 +1,6 @@
+<Solution>
+  <Project Path="AbarrotesControl.Api/AbarrotesControl.Api.csproj" />
+  <Project Path="AbarrotesControl.Core/AbarrotesControl.Core.csproj" />
+  <Project Path="AbarrotesControl.Infrastructure/AbarrotesControl.Infrastructure.csproj" />
+  <Project Path="AbarrotesControl.Services/AbarrotesControl.Services.csproj" />
+</Solution>
