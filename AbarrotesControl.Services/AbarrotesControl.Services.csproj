@@ -8,6 +8,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\AbarrotesControl.Core\AbarrotesControl.Core.csproj" />
+    <ProjectReference Include="..\AbarrotesControl.Infrastructure\AbarrotesControl.Infrastructure.csproj" />
   </ItemGroup>
 
 </Project>
