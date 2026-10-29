@@ -87,5 +87,74 @@ foreach ($case in @(
 }
 Test-Endpoint 'RN-11 fecha futura' '/api/entradas' 400 @{ proveedorId = 1; fechaEntrada = '9999-12-31'; detalles = $entry.detalles } -Validation
 Test-Endpoint 'Fecha omitida' '/api/entradas' 400 @{ proveedorId = 1; detalles = $entry.detalles } -Validation
+# CU-04/CU-05: consultas y rechazos seguros; no registra ventas exitosas.
+Test-Endpoint 'Últimas ventas' '/api/ventas'
+Test-Endpoint 'Venta inexistente' '/api/ventas/2147483647' 404
+Test-Endpoint 'Stock activo' '/api/stock'
+Test-Endpoint 'Stock con alertas' '/api/stock?soloAlertas=true'
+Test-Endpoint 'Stock categoría inexistente' '/api/stock?categoriaId=2147483647' 404
+Test-Endpoint 'Stock producto inexistente' '/api/stock/2147483647' 404
+Test-Endpoint 'Stock filtro inválido' '/api/stock?soloAlertas=incorrecto' 400
+Test-Endpoint 'Todas las alertas' '/api/alertas'
+foreach ($tipo in @('SIN_STOCK', 'STOCK_BAJO', 'POR_VENCER', 'VENCIDO')) {
+    Test-Endpoint "Alertas $tipo" "/api/alertas?tipo=$tipo"
+}
+Test-Endpoint 'Tipo de alerta inválido' '/api/alertas?tipo=OTRO' 400
+Test-Endpoint 'RN-12 detalles vacíos' '/api/ventas' 400 @{ detalles = @() } -Validation
+Test-Endpoint 'RN-12 detalles nulos' '/api/ventas' 400 @{ detalles = $null } -Validation
+Test-Endpoint 'RN-12 línea nula' '/api/ventas' 400 @{ detalles = @($null) } -Validation
+foreach ($cantidad in @(0, -1, 1.5)) {
+    Test-Endpoint "RN-12 cantidad $cantidad" '/api/ventas' 400 @{
+        detalles = @(@{ productoId = 1; cantidad = $cantidad })
+    } -Validation
+}
+Test-Endpoint 'RN-12 producto repetido' '/api/ventas' 400 @{
+    detalles = @(@{ productoId = 1; cantidad = 1 }, @{ productoId = 1; cantidad = 2 })
+} -Validation
+Test-Endpoint 'RN-14 producto inexistente' '/api/ventas' 404 @{
+    detalles = @(@{ productoId = 2147483647; cantidad = 1 })
+}
+try {
+    $stockResponse = Invoke-RestMethod "$BaseUrl/api/stock" -SkipCertificateCheck
+    $productos = @($stockResponse.data)
+    $activo = $productos | Select-Object -First 1
+    if ($null -ne $activo) {
+        Test-Endpoint 'Stock por producto' "/api/stock/$($activo.productoId)"
+        Test-Endpoint 'Stock por categoría' "/api/stock?categoriaId=$($activo.categoriaId)"
+    }
+    # SIN_STOCK o VENCIDO garantizan rechazo aun si otra venta consume existencias.
+    # RN-13 se prueba junto a un id inexistente para impedir cualquier escritura
+    # incluso si hay reposiciones concurrentes; debe conservar el problema RN-13.
+    $insuficiente = $productos | Where-Object { $_.stockActual -lt [int]::MaxValue } | Select-Object -First 1
+    if ($null -ne $insuficiente) {
+        $body = @{ detalles = @(
+            @{ productoId = $insuficiente.productoId; cantidad = [int]::MaxValue },
+            @{ productoId = 2147483647; cantidad = 1 }
+        ) } | ConvertTo-Json -Depth 10
+        $response = Invoke-WebRequest "$BaseUrl/api/ventas" -Method POST -Body $body `
+            -ContentType 'application/json' -SkipCertificateCheck -SkipHttpErrorCheck
+        $errorBody = $response.Content | ConvertFrom-Json
+        if ([int]$response.StatusCode -ne 404 -or
+            @($errorBody.errors | Where-Object { $_.motivo -like '*RN-13*' }).Count -eq 0) {
+            throw 'No se acumularon los problemas de stock y producto inexistente.'
+        }
+        Write-Host 'OK  RN-13 y RN-14: acumulación de problemas sin escritura'
+        $passed++
+    } else { Write-Host 'SKIP RN-13: no hay productos activos con stock menor al máximo entero.' }
+    $vencido = $productos | Where-Object { 'VENCIDO' -in $_.alertas } | Select-Object -First 1
+    if ($null -ne $vencido) {
+        Test-Endpoint 'RN-14 producto vencido' '/api/ventas' 409 @{
+            detalles = @(@{ productoId = $vencido.productoId; cantidad = 1 })
+        }
+    } else { Write-Host 'SKIP RN-14 vencido: no hay productos activos vencidos.' }
+    $ventas = Invoke-RestMethod "$BaseUrl/api/ventas" -SkipCertificateCheck
+    if (@($ventas.data).Count -gt 50) { throw 'El listado devuelve más de 50 ventas.' }
+    if (@($ventas.data).Count -gt 0) {
+        Test-Endpoint 'Consulta de venta existente' "/api/ventas/$($ventas.data[0].id)"
+    } else { Write-Host 'SKIP consulta individual de venta: no existen ventas.' }
+} catch {
+    Write-Host "FAIL Verificación CU-04/CU-05: $($_.Exception.Message)"
+    $failed++
+}
 Write-Host "Resultado: $passed correctas; $failed fallidas."
 if ($failed -gt 0) { exit 1 }

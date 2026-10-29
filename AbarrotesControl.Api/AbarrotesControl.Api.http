@@ -8,9 +8,100 @@
 @proveedorId = 1
 @productoId = 1
 @entradaId = 1
+@ventaId = 1
+# Ajustar a productos activos existentes con las condiciones indicadas.
+@productoVencidoId = 2
+@productoInactivoId = 3
 # Cambia el nombre antes de repetir el caso válido.
 @nombreProducto = Producto prueba CU02
 @idInexistente = 2147483647
+
+### CU-04: venta válida; producto activo, no vencido y con stock >= 1 (201)
+POST {{host}}/api/ventas
+Content-Type: application/json
+
+{ "detalles": [{ "productoId": {{productoId}}, "cantidad": 1 }] }
+
+### Consultar venta; usar id devuelto por POST (200)
+GET {{host}}/api/ventas/{{ventaId}}
+
+### Últimas 50 ventas, más recientes primero (200)
+GET {{host}}/api/ventas
+
+### CU-05: stock filtrado (200)
+GET {{host}}/api/stock?categoriaId={{categoriaId}}&buscar=&soloAlertas=false
+
+### Stock de producto activo (200)
+GET {{host}}/api/stock/{{productoId}}
+
+### Alertas (200); admite también STOCK_BAJO, POR_VENCER y VENCIDO
+GET {{host}}/api/alertas?tipo=SIN_STOCK
+
+### Todas las alertas (200)
+GET {{host}}/api/alertas
+
+### RN-12: sin productos (400)
+POST {{host}}/api/ventas
+Content-Type: application/json
+
+{ "detalles": [] }
+
+### RN-12: cantidad cero (400)
+POST {{host}}/api/ventas
+Content-Type: application/json
+
+{ "detalles": [{ "productoId": {{productoId}}, "cantidad": 0 }] }
+
+### RN-12: cantidad fraccionaria (400)
+POST {{host}}/api/ventas
+Content-Type: application/json
+
+{ "detalles": [{ "productoId": {{productoId}}, "cantidad": 1.5 }] }
+
+### RN-12: producto repetido (400)
+POST {{host}}/api/ventas
+Content-Type: application/json
+
+{ "detalles": [{ "productoId": {{productoId}}, "cantidad": 1 }, { "productoId": {{productoId}}, "cantidad": 2 }] }
+
+### RN-13: stock insuficiente; elegir producto con stock menor a 2147483647 (409)
+POST {{host}}/api/ventas
+Content-Type: application/json
+
+{ "detalles": [{ "productoId": {{productoId}}, "cantidad": 2147483647 }] }
+
+### RN-14: producto vencido, fecha anterior a hoy (409)
+POST {{host}}/api/ventas
+Content-Type: application/json
+
+{ "detalles": [{ "productoId": {{productoVencidoId}}, "cantidad": 1 }] }
+
+### RN-14: producto inexistente (404)
+POST {{host}}/api/ventas
+Content-Type: application/json
+
+{ "detalles": [{ "productoId": {{idInexistente}}, "cantidad": 1 }] }
+
+### RN-14: producto inactivo (404)
+POST {{host}}/api/ventas
+Content-Type: application/json
+
+{ "detalles": [{ "productoId": {{productoInactivoId}}, "cantidad": 1 }] }
+
+### Stock: categoría inexistente (404)
+GET {{host}}/api/stock?categoriaId={{idInexistente}}
+
+### Stock: producto inexistente (404)
+GET {{host}}/api/stock/{{idInexistente}}
+
+### Stock: filtro booleano inválido (400)
+GET {{host}}/api/stock?soloAlertas=incorrecto
+
+### Alertas: tipo inválido (400)
+GET {{host}}/api/alertas?tipo=OTRO
+
+### Venta inexistente (404)
+GET {{host}}/api/ventas/{{idInexistente}}
 
 ### CU-02: crear producto válido (201)
 POST {{host}}/api/productos

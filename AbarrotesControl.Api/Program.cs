@@ -28,9 +28,13 @@ public class Program
         builder.Services.AddTransient<ICategoriaService, CategoriaService>();
         builder.Services.AddTransient<IProveedorService, ProveedorService>();
         builder.Services.AddTransient<IEntradaService, EntradaService>();
+        builder.Services.AddTransient<IVentaService, VentaService>();
+        builder.Services.AddTransient<IStockService, StockService>();
         builder.Services.AddScoped(typeof(IBaseRepository<>), typeof(BaseRepository<>));
         builder.Services.AddScoped<IProductoRepository, ProductoRepository>();
         builder.Services.AddScoped<IEntradaRepository, EntradaRepository>();
+        builder.Services.AddScoped<IVentaRepository, VentaRepository>();
+        builder.Services.AddScoped<IStockRepository, StockRepository>();
 
         builder.Services.AddControllers(options =>
         {
@@ -47,6 +51,8 @@ public class Program
         builder.Services.AddScoped<IValidator<CrearProductoDto>, CrearProductoDtoValidator>();
         builder.Services.AddScoped<IValidator<CrearEntradaDto>, CrearEntradaDtoValidator>();
         builder.Services.AddScoped<IValidator<CrearDetalleEntradaDto>, CrearDetalleEntradaDtoValidator>();
+        builder.Services.AddScoped<IValidator<CrearVentaDto>, CrearVentaDtoValidator>();
+        builder.Services.AddScoped<IValidator<CrearDetalleVentaDto>, CrearDetalleVentaDtoValidator>();
 
         var app = builder.Build();
 
