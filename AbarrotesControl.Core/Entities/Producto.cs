@@ -1,8 +1,7 @@
 namespace AbarrotesControl.Core.Entities;
 
-public partial class Producto
+public partial class Producto : BaseEntity
 {
-    public int Id { get; set; }
     public string Nombre { get; set; } = string.Empty;
     public int CategoriaId { get; set; }
     public decimal PrecioVenta { get; set; }
@@ -15,4 +14,7 @@ public partial class Producto
     public virtual Categoria Categoria { get; set; } = null!;
     public virtual Usuario Usuario { get; set; } = null!;
     public virtual ICollection<DetalleEntrada> DetallesEntrada { get; set; } = new List<DetalleEntrada>();
+    public virtual ICollection<DetalleVenta> DetallesVenta { get; set; } = new List<DetalleVenta>();
+    public virtual ICollection<AjusteStock> AjustesStock { get; set; } = new List<AjusteStock>();
+    public virtual ICollection<MovimientoStock> MovimientosStock { get; set; } = new List<MovimientoStock>();
 }

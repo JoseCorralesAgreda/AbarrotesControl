@@ -1,56 +1,67 @@
-using AbarrotesControl.Infrastructure.Data;
+using AbarrotesControl.Api.Filters;
+using AbarrotesControl.Core.DTOs;
 using AbarrotesControl.Core.Interfaces;
+using AbarrotesControl.Infrastructure.Data;
+using AbarrotesControl.Infrastructure.Mappings;
 using AbarrotesControl.Infrastructure.Repositories;
+using AbarrotesControl.Services.Interfaces;
+using AbarrotesControl.Services.Services;
 using AbarrotesControl.Services.Validators;
 using FluentValidation;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
-var builder = WebApplication.CreateBuilder(args);
+namespace AbarrotesControl.Api;
 
-var connectionString = builder.Configuration.GetConnectionString("ConnectionMySql");
-builder.Services.AddDbContext<AbarrotesControlContext>(options =>
-    options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString)));
-
-builder.Services.AddControllers(options => options.SuppressImplicitRequiredAttributeForNonNullableReferenceTypes = true)
-    .ConfigureApiBehaviorOptions(options =>
+public class Program
+{
+    public static void Main(string[] args)
     {
-        options.InvalidModelStateResponseFactory = context => new BadRequestObjectResult(new
+        var builder = WebApplication.CreateBuilder(args);
+
+        #region "Configurar la BD MySql"
+        var connectionString = builder.Configuration.GetConnectionString("ConnectionMySql");
+        builder.Services.AddDbContext<AbarrotesControlContext>(options =>
+            options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString)));
+        #endregion
+
+        builder.Services.AddTransient<IProductoService, ProductoService>();
+        builder.Services.AddTransient<ICategoriaService, CategoriaService>();
+        builder.Services.AddTransient<IProveedorService, ProveedorService>();
+        builder.Services.AddTransient<IEntradaService, EntradaService>();
+        builder.Services.AddScoped(typeof(IBaseRepository<>), typeof(BaseRepository<>));
+        builder.Services.AddScoped<IProductoRepository, ProductoRepository>();
+        builder.Services.AddScoped<IEntradaRepository, EntradaRepository>();
+
+        builder.Services.AddControllers(options =>
         {
-            message = "Error de validación",
-            errors = context.ModelState
-                .SelectMany(entry => entry.Value!.Errors.Select(_ => new
-                {
-                    field = entry.Key,
-                    error = "El valor enviado no es válido para este campo."
-                }))
+            options.SuppressImplicitRequiredAttributeForNonNullableReferenceTypes = true;
+            options.Filters.Add<ModelStateValidationFilter>();
+        }).ConfigureApiBehaviorOptions(options =>
+        {
+            options.SuppressModelStateInvalidFilter = true;
         });
-    });
-builder.Services.AddOpenApi();
-builder.Services.AddAutoMapper(typeof(AbarrotesControlContext).Assembly);
-builder.Services.AddScoped<IProductoRepository, ProductoRepository>();
-builder.Services.AddScoped<ICategoriaRepository, CategoriaRepository>();
-builder.Services.AddScoped<IEntradaRepository, EntradaRepository>();
-builder.Services.AddScoped<IProveedorRepository, ProveedorRepository>();
-builder.Services.AddValidatorsFromAssemblyContaining<CrearProductoDtoValidator>();
 
-var app = builder.Build();
+        builder.Services.AddOpenApi();
+        builder.Services.AddAutoMapper(typeof(ProductoProfile).Assembly);
 
-app.UseExceptionHandler(handler => handler.Run(async context =>
-{
-    context.Response.StatusCode = StatusCodes.Status500InternalServerError;
-    await context.Response.WriteAsJsonAsync(new { message = "Ocurrió un error interno al procesar la solicitud." });
-}));
+        builder.Services.AddScoped<IValidator<CrearProductoDto>, CrearProductoDtoValidator>();
+        builder.Services.AddScoped<IValidator<CrearEntradaDto>, CrearEntradaDtoValidator>();
+        builder.Services.AddScoped<IValidator<CrearDetalleEntradaDto>, CrearDetalleEntradaDtoValidator>();
 
-if (app.Environment.IsDevelopment())
-{
-    app.MapOpenApi();
+        var app = builder.Build();
+
+        app.UseMiddleware<ExceptionHandlingMiddleware>();
+
+        if (app.Environment.IsDevelopment())
+        {
+            app.MapOpenApi();
+        }
+
+        app.UseHttpsRedirection();
+        app.UseDefaultFiles();
+        app.UseStaticFiles();
+        app.UseAuthorization();
+        app.MapControllers();
+        app.Run();
+    }
 }
-
-app.UseHttpsRedirection();
-app.UseDefaultFiles();
-app.UseStaticFiles();
-
-app.MapControllers();
-
-app.Run();

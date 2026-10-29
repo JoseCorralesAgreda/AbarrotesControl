@@ -24,6 +24,14 @@ function Test-Endpoint {
         if ([int]$response.StatusCode -ne $Status) {
             throw "Se esperaba HTTP $Status, se obtuvo $($response.StatusCode)."
         }
+        if ($Status -ge 400) {
+            $errorResponse = $response.Content | ConvertFrom-Json
+            if ($errorResponse.status -ne $Status -or -not $errorResponse.title -or
+                -not $errorResponse.message -or -not $errorResponse.traceId -or
+                'errors' -notin $errorResponse.PSObject.Properties.Name) {
+                throw 'La respuesta no cumple el contrato ErrorResponse.'
+            }
+        }
         if ($Validation) {
             $json = $response.Content | ConvertFrom-Json
             if ($json.message -ne 'Error de validación' -or $json.errors.Count -lt 1) {
@@ -48,6 +56,8 @@ Test-Endpoint 'Estilos' '/styles.css'
 Test-Endpoint 'Listado de productos' '/api/productos'
 Test-Endpoint 'Listado de categorías' '/api/categorias'
 Test-Endpoint 'Listado de proveedores' '/api/proveedores'
+Test-Endpoint 'Producto inexistente' '/api/productos/2147483647' 404
+Test-Endpoint 'Entrada inexistente' '/api/entradas/2147483647' 404
 
 $product = @{ nombre = 'Validación sin escritura'; categoriaId = 1; precioVenta = 10; stockMinimo = 0; fechaVencimiento = $null }
 foreach ($case in @(

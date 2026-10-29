@@ -1,8 +1,7 @@
 namespace AbarrotesControl.Core.Entities;
 
-public partial class EntradaMercaderia
+public partial class EntradaMercaderia : BaseEntity
 {
-    public int Id { get; set; }
     public int ProveedorId { get; set; }
     public int UsuarioId { get; set; }
     public DateOnly FechaEntrada { get; set; }

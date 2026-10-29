@@ -5,7 +5,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace AbarrotesControl.Infrastructure.Repositories;
 
-public class EntradaRepository(AbarrotesControlContext context) : IEntradaRepository
+public class EntradaRepository(AbarrotesControlContext context) : BaseRepository<EntradaMercaderia>(context), IEntradaRepository
 {
     public Task<EntradaMercaderia?> GetByIdAsync(int id) =>
         context.EntradasMercaderia.AsNoTracking()
@@ -33,7 +33,24 @@ public class EntradaRepository(AbarrotesControlContext context) : IEntradaReposi
                         x => x.StockActual, x => x.StockActual + detalle.Cantidad));
                 if (actualizados != 1)
                     throw new InvalidOperationException("Un producto ya no está disponible.");
+
+                // Proyectar desde la BD evita el stock anterior de las entidades rastreadas.
+                var stockResultante = await context.Productos
+                    .Where(x => x.Id == detalle.ProductoId)
+                    .Select(x => x.StockActual).SingleAsync();
+                context.MovimientosStock.Add(new MovimientoStock
+                {
+                    ProductoId = detalle.ProductoId,
+                    UsuarioId = entrada.UsuarioId,
+                    Tipo = "ENTRADA",
+                    Cantidad = detalle.Cantidad,
+                    StockResultante = stockResultante,
+                    ReferenciaId = entrada.Id,
+                    FechaMovimiento = entrada.FechaRegistro
+                });
             }
+
+            await context.SaveChangesAsync();
 
             var resultado = await GetByIdAsync(entrada.Id)
                 ?? throw new InvalidOperationException("No se pudo recuperar la entrada.");

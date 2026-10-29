@@ -1,4 +1,8 @@
 @host = https://localhost:7091
+# Errores (400/404/409/500): { status, title, message, errors, traceId }.
+# Validación: errors = [{ field, error }]. RN-08: errors = { proveedorIds, productoIds }.
+# Las respuestas exitosas conservan { data: ... }.
+# CU-03 guarda un movimiento ENTRADA por línea en la misma transacción.
 # Ajusta los ids a registros existentes; UsuarioSemillaId debe existir en usuarios.
 @categoriaId = 1
 @proveedorId = 1

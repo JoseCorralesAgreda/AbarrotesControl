@@ -1,8 +1,7 @@
 namespace AbarrotesControl.Core.Entities;
 
-public partial class DetalleEntrada
+public partial class DetalleEntrada : BaseEntity
 {
-    public int Id { get; set; }
     public int EntradaId { get; set; }
     public int ProductoId { get; set; }
     public int Cantidad { get; set; }

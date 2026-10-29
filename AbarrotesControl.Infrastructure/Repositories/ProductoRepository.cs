@@ -5,7 +5,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace AbarrotesControl.Infrastructure.Repositories;
 
-public class ProductoRepository(AbarrotesControlContext context) : IProductoRepository
+public class ProductoRepository(AbarrotesControlContext context) : BaseRepository<Producto>(context), IProductoRepository
 {
     public Task<List<Producto>> GetAllAsync() =>
         context.Productos.AsNoTracking().Include(x => x.Categoria).ToListAsync();

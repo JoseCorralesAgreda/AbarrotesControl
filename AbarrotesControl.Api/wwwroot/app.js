@@ -33,9 +33,10 @@ async function api(path, body) {
     }
     const payload = await response.json().catch(() => ({}));
     if (!response.ok) {
-        const errors = (payload.errors || []).map(item => item.field + ": " + item.error);
-        if (payload.proveedorIds?.length) errors.push("Proveedores: " + payload.proveedorIds.join(", "));
-        if (payload.productoIds?.length) errors.push("Productos: " + payload.productoIds.join(", "));
+        const details = payload.errors;
+        const errors = Array.isArray(details) ? details.map(item => item.field + ": " + item.error) : [];
+        if (details?.proveedorIds?.length) errors.push("Proveedores: " + details.proveedorIds.join(", "));
+        if (details?.productoIds?.length) errors.push("Productos: " + details.productoIds.join(", "));
         throw new Error([payload.message || "No se pudo completar la operación (" + response.status + ").", ...errors].join("\n"));
     }
     return payload.data;

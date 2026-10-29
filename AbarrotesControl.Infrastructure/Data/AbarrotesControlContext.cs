@@ -12,6 +12,11 @@ public class AbarrotesControlContext : DbContext
     public DbSet<EntradaMercaderia> EntradasMercaderia => Set<EntradaMercaderia>();
     public DbSet<DetalleEntrada> DetallesEntrada => Set<DetalleEntrada>();
 
+    public DbSet<Venta> Ventas => Set<Venta>();
+    public DbSet<DetalleVenta> DetallesVenta => Set<DetalleVenta>();
+    public DbSet<AjusteStock> AjustesStock => Set<AjusteStock>();
+    public DbSet<MovimientoStock> MovimientosStock => Set<MovimientoStock>();
+
     public AbarrotesControlContext(DbContextOptions<AbarrotesControlContext> options)
         : base(options)
     {

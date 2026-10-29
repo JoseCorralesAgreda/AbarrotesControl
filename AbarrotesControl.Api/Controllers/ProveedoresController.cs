@@ -1,6 +1,6 @@
 using AbarrotesControl.Api.Response;
 using AbarrotesControl.Core.DTOs;
-using AbarrotesControl.Core.Interfaces;
+using AbarrotesControl.Services.Interfaces;
 using AutoMapper;
 using Microsoft.AspNetCore.Mvc;
 
@@ -8,7 +8,7 @@ namespace AbarrotesControl.Api.Controllers;
 
 [ApiController]
 [Route("api/proveedores")]
-public class ProveedoresController(IProveedorRepository proveedores, IMapper mapper) : ControllerBase
+public class ProveedoresController(IProveedorService proveedores, IMapper mapper) : ControllerBase
 {
     [HttpGet]
     public async Task<IActionResult> GetAll() =>
