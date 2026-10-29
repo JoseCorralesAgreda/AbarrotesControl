@@ -1,6 +1,6 @@
 # AbarrotesControl
 
-Aplicación local de registro y consulta de productos (CU-02), entradas de mercadería (CU-03), ventas (CU-04) y stock y alertas (CU-05), con actualización transaccional del stock. Incluye una interfaz web para productos y entradas. Usa .NET 10, EF Core 9, Pomelo MySQL, AutoMapper y FluentValidation.
+Aplicación local de registro y consulta de productos (CU-02), entradas de mercadería (CU-03), ventas (CU-04) y stock y alertas (CU-05), con actualización transaccional del stock. Incluye una interfaz web para productos, entradas, ventas y stock y alertas. Usa .NET 10, EF Core 9, Pomelo MySQL, AutoMapper y FluentValidation.
 
 ## Estructura en capas
 
@@ -63,8 +63,10 @@ Abre **https://localhost:7091/** para usar la aplicación:
 - **Nuevo producto:** registro con categoría, precio, stock mínimo y vencimiento opcional.
 - **Registrar entrada:** proveedor, fecha, documento opcional y varios productos con cantidad y costo. Se muestra el total y el comprobante de la entrada guardada.
 - **Consultar entrada:** consulta por el número generado al guardar, con el stock actual de los productos.
+- **Registrar venta:** filas dinámicas de productos activos, con stock y sin vencer; impide repetir productos y calcula precios, subtotales y total. Envía solo producto y cantidad. Muestra el comprobante, las alertas de stock y los errores por producto; al guardar refresca el inventario.
+- **Stock y alertas:** resumen global de alertas, lista filtrable por tipo y tabla de stock con búsqueda, categoría, filtro de productos con alertas e insignias por tipo. Se actualiza al abrir la pantalla y con **Actualizar datos**.
 
-La aplicación usa el usuario semilla configurado; no incluye autenticación y está destinada al uso local del alcance CU-02 a CU-05. Categorías, proveedores y usuario deben existir previamente en la base. Las pantallas avisan cuando la API no puede cargar los datos y permiten reintentar. CU-04 y CU-05 se consultan mediante los endpoints siguientes.
+La aplicación usa el usuario semilla configurado; no incluye autenticación y está destinada al uso local del alcance CU-02 a CU-05. Categorías, proveedores y usuario deben existir previamente en la base. Las pantallas avisan cuando la API no puede cargar los datos y permiten reintentar.
 
 ## Endpoints
 

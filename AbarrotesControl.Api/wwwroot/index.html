@@ -16,6 +16,8 @@
       <button class="nav" data-view="producto">Nuevo producto</button>
       <button class="nav" data-view="entrada">Registrar entrada</button>
       <button class="nav" data-view="consulta">Consultar entrada</button>
+      <button class="nav" data-view="venta">Registrar venta</button>
+      <button class="nav" data-view="stock">Stock y alertas</button>
     </nav>
     <div class="sidebar-footer">Control de mercadería<br><span>Productos · Existencias · Entradas</span></div>
   </aside>
@@ -66,6 +68,35 @@
     <section id="consulta" class="view" hidden>
       <div class="panel"><h2>Consulta una entrada</h2><p>Ingresa el número de entrada generado al registrar la mercadería.</p><form id="lookup-form" class="lookup"><label>Número de entrada<input name="id" type="number" min="1" max="2147483647" step="1" required></label><button type="submit">Consultar</button></form></div>
       <div id="entry-result" class="panel" hidden></div>
+    </section>
+    <section id="venta" class="view" hidden>
+      <div class="panel"><h2>Registra una venta</h2><p>Selecciona productos activos con existencias y sin vencer. Los precios corresponden al precio de venta del producto.</p>
+        <form id="sale-form">
+          <div class="panel-header"><h3>Detalle de la venta</h3><button id="add-sale-row" type="button" class="secondary">+ Agregar producto</button></div>
+          <div id="sale-details"></div>
+          <div class="entry-total" aria-live="polite">Total de venta <strong id="sale-total">0,00</strong></div>
+          <div class="actions"><button type="submit">Registrar venta</button></div>
+        </form>
+      </div>
+      <div id="sale-alerts" class="sale-alerts" role="status" aria-live="polite" hidden></div>
+      <div id="sale-result" class="panel" role="status" aria-live="polite" hidden></div>
+    </section>
+    <section id="stock" class="view" hidden>
+      <div class="stats stock-stats" aria-live="polite">
+        <article><span>Total de alertas</span><strong id="alerts-total">—</strong></article>
+        <article><span>Sin stock</span><strong id="alerts-empty">—</strong></article>
+        <article><span>Stock bajo</span><strong id="alerts-low">—</strong></article>
+        <article><span>Por vencer</span><strong id="alerts-soon">—</strong></article>
+        <article><span>Vencidos</span><strong id="alerts-expired">—</strong></article>
+      </div>
+      <div class="panel"><h2>Alertas del inventario</h2><p>Un producto puede tener varias alertas. Los contadores incluyen todos los tipos.</p>
+        <label>Tipo de alerta<select id="alert-type"><option value="">Todas</option><option value="SIN_STOCK">Sin stock</option><option value="STOCK_BAJO">Stock bajo</option><option value="POR_VENCER">Por vencer</option><option value="VENCIDO">Vencido</option></select></label>
+        <ul id="alert-list" class="alert-list" aria-live="polite"></ul>
+      </div>
+      <div class="panel"><h2>Stock de productos activos</h2>
+        <div class="filters"><label>Buscar producto<input id="stock-search" type="search" placeholder="Nombre del producto…"></label><label>Categoría<select id="stock-category"><option value="">Todas las categorías</option></select></label><label class="checkbox"><input id="stock-only-alerts" type="checkbox">Solo con alertas</label></div>
+        <div class="table-wrap"><table><thead><tr><th>Producto</th><th>Categoría</th><th>Precio</th><th>Stock / mínimo</th><th>Vencimiento</th><th>Alertas</th></tr></thead><tbody id="stock-products"></tbody></table></div>
+      </div>
     </section>
   </main>
 </body>
