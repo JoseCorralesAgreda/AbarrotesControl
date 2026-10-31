@@ -1,3 +1,4 @@
+using AbarrotesControl.Core.QueryFilters;
 using AbarrotesControl.Api.Response;
 using AbarrotesControl.Core.DTOs;
 using AbarrotesControl.Core.Entities;
@@ -9,16 +10,32 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace AbarrotesControl.Api.Controllers;
 
+// RN-17: los registros no admiten PUT ni DELETE.
 [ApiController]
 [Route("api/ventas")]
 public class VentasController(IVentaService service, IMapper mapper,
-    IValidator<CrearVentaDto> validator, IConfiguration configuration) : ControllerBase
+    IValidator<CrearVentaDto> validator, IConfiguration configuration,
+    IValidator<VentaQueryFilter> filtroValidator, IValidator<int> idValidator) : ControllerBase
 {
     [HttpGet]
-    public async Task<IActionResult> GetAll() => Ok(new ApiResponse<List<VentaDto>>(await service.GetAllAsync()));
+    public async Task<IActionResult> GetAll([FromQuery] VentaQueryFilter filtro)
+    {
+        var validation = await filtroValidator.ValidateAsync(filtro);
+        if (!validation.IsValid)
+            throw new BusinessException("Error de validación", details:
+                validation.Errors.Select(e => new { field = e.PropertyName, error = e.ErrorMessage }));
+        return Ok(new ApiResponse<List<VentaDto>>(await service.GetAllAsync(filtro)));
+    }
 
     [HttpGet("{id:int}")]
-    public async Task<IActionResult> GetById(int id) => Ok(new ApiResponse<VentaDto>(await service.GetByIdAsync(id)));
+    public async Task<IActionResult> GetById(int id)
+    {
+        var validation = await idValidator.ValidateAsync(id);
+        if (!validation.IsValid)
+            throw new BusinessException("Error de validación", details:
+                validation.Errors.Select(e => new { field = e.PropertyName, error = e.ErrorMessage }));
+        return Ok(new ApiResponse<VentaDto>(await service.GetByIdAsync(id)));
+    }
 
     [HttpPost]
     public async Task<IActionResult> Post(CrearVentaDto dto)

@@ -1,21 +1,22 @@
+using System.Reflection;
 using AbarrotesControl.Core.Entities;
 using Microsoft.EntityFrameworkCore;
 
 namespace AbarrotesControl.Infrastructure.Data;
 
-public class AbarrotesControlContext : DbContext
+public partial class AbarrotesControlContext : DbContext
 {
-    public DbSet<Usuario> Usuarios => Set<Usuario>();
-    public DbSet<Categoria> Categorias => Set<Categoria>();
-    public DbSet<Proveedor> Proveedores => Set<Proveedor>();
-    public DbSet<Producto> Productos => Set<Producto>();
-    public DbSet<EntradaMercaderia> EntradasMercaderia => Set<EntradaMercaderia>();
-    public DbSet<DetalleEntrada> DetallesEntrada => Set<DetalleEntrada>();
+    public virtual DbSet<Usuario> Usuarios { get; set; }
+    public virtual DbSet<Categoria> Categorias { get; set; }
+    public virtual DbSet<Proveedor> Proveedores { get; set; }
+    public virtual DbSet<Producto> Productos { get; set; }
+    public virtual DbSet<EntradaMercaderia> EntradasMercaderia { get; set; }
+    public virtual DbSet<DetalleEntrada> DetallesEntrada { get; set; }
 
-    public DbSet<Venta> Ventas => Set<Venta>();
-    public DbSet<DetalleVenta> DetallesVenta => Set<DetalleVenta>();
-    public DbSet<AjusteStock> AjustesStock => Set<AjusteStock>();
-    public DbSet<MovimientoStock> MovimientosStock => Set<MovimientoStock>();
+    public virtual DbSet<Venta> Ventas { get; set; }
+    public virtual DbSet<DetalleVenta> DetallesVenta { get; set; }
+    public virtual DbSet<AjusteStock> AjustesStock { get; set; }
+    public virtual DbSet<MovimientoStock> MovimientosStock { get; set; }
 
     public AbarrotesControlContext(DbContextOptions<AbarrotesControlContext> options)
         : base(options)
@@ -25,6 +26,6 @@ public class AbarrotesControlContext : DbContext
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
-        modelBuilder.ApplyConfigurationsFromAssembly(typeof(AbarrotesControlContext).Assembly);
+        modelBuilder.ApplyConfigurationsFromAssembly(Assembly.GetExecutingAssembly());
     }
 }

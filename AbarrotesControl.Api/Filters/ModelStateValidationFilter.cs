@@ -9,10 +9,12 @@ public class ModelStateValidationFilter : IActionFilter
     {
         if (!context.ModelState.IsValid)
             throw new BusinessException("Error de validación", details: context.ModelState
-                .SelectMany(entry => entry.Value!.Errors.Select(_ => new
+                .SelectMany(entry => entry.Value!.Errors.Select(error => new
                 {
                     field = entry.Key,
-                    error = "El valor enviado no es válido para este campo."
+                    error = string.IsNullOrWhiteSpace(error.ErrorMessage)
+                        ? "El valor enviado no es válido para este campo."
+                        : error.ErrorMessage
                 })));
     }
 

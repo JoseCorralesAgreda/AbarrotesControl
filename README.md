@@ -29,7 +29,19 @@ El script disponible contiene seis tablas del alcance inicial. La base existente
 
 El script no carga datos de ejemplo. Antes de registrar productos debe existir el usuario indicado por `UsuarioSemillaId` (por defecto, id 1) y una categoría. Para registrar entradas también deben existir un proveedor activo y productos activos.
 
-## Configuración
+## Base de datos (Database First)
+
+`abarrotes_control.sql` es la fuente de verdad del esquema versionado. No hay migraciones. Su alcance inicial de seis tablas y la necesidad del esquema completo para CU-04 se detallan arriba.
+
+Para regenerar entidades y contexto desde la base existente, el comando de referencia es:
+
+```sh
+dotnet ef dbcontext scaffold "Name=ConnectionStrings:ConnectionMySql" Pomelo.EntityFrameworkCore.MySql --project AbarrotesControl.Infrastructure --startup-project AbarrotesControl.Api --context AbarrotesControlContext --context-dir Data --output-dir ../AbarrotesControl.Core/Entities --force
+```
+
+El comando se documenta únicamente; `--force` sobrescribe los archivos generados. Revisa los cambios antes de incorporarlos para conservar `BaseEntity` y las configuraciones de entidades del proyecto.
+
+## Configuración de conexión
 
 En `AbarrotesControl.Api/appsettings.json`, configura estos valores conservando las demás opciones:
 
@@ -86,6 +98,21 @@ La aplicación usa el usuario semilla configurado; no incluye autenticación y e
 | GET | `/api/alertas?tipo=SIN_STOCK` | Resumen; tipo opcional: SIN_STOCK, STOCK_BAJO, POR_VENCER, VENCIDO |
 
 La venta recibe únicamente `detalles: [{ productoId, cantidad }]`; los precios se toman del producto. No admite modificación ni eliminación. RN-12 rechaza listas vacías, cantidades no enteras o no positivas y productos repetidos (400). RN-13/RN-14 acumulan todos los problemas de stock y vencimiento (409); si hay ids inexistentes o inactivos, prevalece 404 y se conservan los demás problemas. El middleware publica los `details` de `BusinessException` en `errors`, con objetos `{ productoId, producto, motivo, disponible, solicitado }`.
+
+### Filtros de consulta
+
+Todos los filtros son opcionales y se combinan. Sin filtros se conserva la respuesta habitual, envuelta en `ApiResponse<T>` (`{ data: ... }`).
+
+| GET | Parámetros |
+| --- | --- |
+| `/api/productos` | `nombre` (contiene, máximo 120 caracteres), `categoriaId` (mayor que 0), `activo` (`true` o `false`) |
+| `/api/stock` | `buscar` (contiene, máximo 120 caracteres; se recortan espacios), `categoriaId` (mayor que 0), `soloAlertas` (`false` por defecto) |
+| `/api/alertas` | `tipo`: `SIN_STOCK`, `STOCK_BAJO`, `POR_VENCER` o `VENCIDO` |
+| `/api/ventas` | `desde` y `hasta` (`yyyy-MM-dd`, días completos incluidos; `desde <= hasta`); conserva orden descendente y máximo 50 resultados |
+
+Los ids de consulta individual de productos, entradas, ventas y stock deben ser mayores que 0. Los parámetros inválidos devuelven HTTP 400 con `ErrorResponse` y `errors: [{ field, error }]`; los errores de conversión conservan el mensaje de ModelState. Una categoría positiva inexistente en stock sigue devolviendo 404.
+
+Ejemplos: `/api/productos?nombre=Arroz&categoriaId=1&activo=true`, `/api/stock?buscar=Arroz&soloAlertas=true`, `/api/alertas?tipo=STOCK_BAJO` y `/api/ventas?desde=2026-01-01&hasta=2026-12-31`. `wwwroot/app.js` consulta las listas sin parámetros y filtra localmente; sus contratos siguen siendo compatibles.
 
 SIN_STOCK significa cero existencias; STOCK_BAJO, stock positivo menor o igual al mínimo. POR_VENCER incluye hoy y el día límite configurado; VENCIDO significa fecha anterior a hoy. Un producto puede generar varias alertas. Los contadores del resumen cuentan alertas del filtro aplicado, no productos únicos. Las alertas de una venta reflejan el stock consultado al devolverla; no son un historial de alertas.
 

@@ -9,14 +9,22 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace AbarrotesControl.Api.Controllers;
 
+// RN-10: los registros no admiten PUT ni DELETE.
 [ApiController]
 [Route("api/entradas")]
 public class EntradasController(IEntradaService service, IMapper mapper,
-    IValidator<CrearEntradaDto> validator) : ControllerBase
+    IValidator<CrearEntradaDto> validator,
+    IValidator<int> idValidator) : ControllerBase
 {
     [HttpGet("{id:int}")]
-    public async Task<IActionResult> GetById(int id) =>
-        Ok(new ApiResponse<EntradaDto>(mapper.Map<EntradaDto>(await service.GetByIdAsync(id))));
+    public async Task<IActionResult> GetById(int id)
+    {
+        var validation = await idValidator.ValidateAsync(id);
+        if (!validation.IsValid)
+            throw new BusinessException("Error de validación", details:
+                validation.Errors.Select(e => new { field = e.PropertyName, error = e.ErrorMessage }));
+        return Ok(new ApiResponse<EntradaDto>(mapper.Map<EntradaDto>(await service.GetByIdAsync(id))));
+    }
 
     [HttpPost]
     public async Task<IActionResult> Post(CrearEntradaDto dto)

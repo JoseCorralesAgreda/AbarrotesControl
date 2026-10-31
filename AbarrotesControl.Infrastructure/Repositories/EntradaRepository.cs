@@ -15,6 +15,7 @@ public class EntradaRepository(AbarrotesControlContext context) : BaseRepository
 
     public async Task<EntradaMercaderia> InsertAsync(EntradaMercaderia entrada)
     {
+        // RN-09: guardar entrada, incremento de stock y movimientos en una transacción.
         await using var transaction = await context.Database.BeginTransactionAsync();
         try
         {
@@ -27,6 +28,7 @@ public class EntradaRepository(AbarrotesControlContext context) : BaseRepository
             // Incrementos atómicos y orden estable para entradas concurrentes.
             foreach (var detalle in entrada.Detalles.OrderBy(x => x.ProductoId))
             {
+                // RN-09: incrementar el stock de forma atómica.
                 var actualizados = await context.Productos
                     .Where(x => x.Id == detalle.ProductoId && x.Activo)
                     .ExecuteUpdateAsync(update => update.SetProperty(

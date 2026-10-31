@@ -1,3 +1,4 @@
+using AbarrotesControl.Core.QueryFilters;
 using System.Net;
 using AbarrotesControl.Core.DTOs;
 using AbarrotesControl.Core.Entities;
@@ -24,7 +25,7 @@ public class VentaService(IVentaRepository ventas, IProductoRepository productos
     public async Task<VentaDto> GetByIdAsync(int id) => ToDto(await ventas.GetByIdAsync(id)
         ?? throw new BusinessException($"No existe la venta con id {id}.", HttpStatusCode.NotFound));
 
-    public async Task<List<VentaDto>> GetAllAsync() => (await ventas.GetAllAsync()).Select(ToDto).ToList();
+    public async Task<List<VentaDto>> GetAllAsync(VentaQueryFilter filtro) => (await ventas.GetAllAsync(filtro)).Select(ToDto).ToList();
 
     public async Task<VentaDto> InsertAsync(Venta venta)
     {
@@ -52,6 +53,7 @@ public class VentaService(IVentaRepository ventas, IProductoRepository productos
             }
             if (producto.StockActual < detalle.Cantidad) Problema("Stock insuficiente (RN-13)");
             if (producto.FechaVencimiento < hoy) Problema("Producto vencido (RN-14)");
+            // RN-16: usar el precio vigente del producto.
             detalle.PrecioUnitario = producto.PrecioVenta;
             detalle.Subtotal = detalle.Cantidad * producto.PrecioVenta;
         }

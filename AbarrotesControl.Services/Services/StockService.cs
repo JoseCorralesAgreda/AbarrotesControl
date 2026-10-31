@@ -1,4 +1,6 @@
+using AbarrotesControl.Core.QueryFilters;
 using System.Net;
+using AutoMapper;
 using AbarrotesControl.Core.DTOs;
 using AbarrotesControl.Core.Entities;
 using AbarrotesControl.Core.Exceptions;
@@ -8,9 +10,8 @@ using Microsoft.Extensions.Configuration;
 
 namespace AbarrotesControl.Services.Services;
 
-public class StockService(IStockRepository repository, IConfiguration configuration) : IStockService
+public class StockService(IStockRepository repository, IConfiguration configuration, IMapper mapper) : IStockService
 {
-    private static readonly string[] Tipos = ["SIN_STOCK", "STOCK_BAJO", "POR_VENCER", "VENCIDO"];
     private readonly int diasVencimiento = Math.Max(0, int.Parse(configuration["Alertas:DiasVencimiento"] ?? "15"));
 
     public List<AlertaStockDto> CalcularAlertas(Producto producto, DateOnly hoy)
@@ -18,12 +19,14 @@ public class StockService(IStockRepository repository, IConfiguration configurat
         var alertas = new List<AlertaStockDto>();
         if (!producto.Activo) return alertas;
         int? dias = producto.FechaVencimiento?.DayNumber - hoy.DayNumber;
-        void Agregar(string tipo, string mensaje) => alertas.Add(new AlertaStockDto
+        void Agregar(string tipo, string mensaje)
         {
-            ProductoId = producto.Id, ProductoNombre = producto.Nombre, Tipo = tipo,
-            StockActual = producto.StockActual, StockMinimo = producto.StockMinimo,
-            FechaVencimiento = producto.FechaVencimiento, DiasParaVencer = dias, Mensaje = mensaje
-        });
+            var alerta = mapper.Map<AlertaStockDto>(producto);
+            alerta.Tipo = tipo;
+            alerta.Mensaje = mensaje;
+            alerta.DiasParaVencer = dias;
+            alertas.Add(alerta);
+        }
         if (producto.StockActual == 0) Agregar("SIN_STOCK", "Producto sin existencias.");
         if (producto.StockActual > 0 && producto.StockActual <= producto.StockMinimo)
             Agregar("STOCK_BAJO", "Stock igual o inferior al mínimo (RN-18).");
@@ -33,23 +36,21 @@ public class StockService(IStockRepository repository, IConfiguration configurat
         return alertas;
     }
 
-    private StockDto ToDto(Producto producto, DateOnly hoy) => new()
+    private StockDto ToDto(Producto producto, DateOnly hoy)
     {
-        ProductoId = producto.Id, Nombre = producto.Nombre, CategoriaId = producto.CategoriaId,
-        Categoria = producto.Categoria.Nombre, PrecioVenta = producto.PrecioVenta,
-        StockActual = producto.StockActual, StockMinimo = producto.StockMinimo,
-        FechaVencimiento = producto.FechaVencimiento,
-        DiasParaVencer = producto.FechaVencimiento?.DayNumber - hoy.DayNumber,
-        Alertas = CalcularAlertas(producto, hoy).Select(x => x.Tipo).ToList()
-    };
+        var dto = mapper.Map<StockDto>(producto);
+        dto.DiasParaVencer = producto.FechaVencimiento?.DayNumber - hoy.DayNumber;
+        dto.Alertas = CalcularAlertas(producto, hoy).Select(x => x.Tipo).ToList();
+        return dto;
+    }
 
-    public async Task<List<StockDto>> GetAllAsync(int? categoriaId = null, string? buscar = null, bool soloAlertas = false)
+    public async Task<List<StockDto>> GetAllAsync(StockQueryFilter filtro)
     {
-        if (categoriaId.HasValue && !await repository.ExisteCategoriaAsync(categoriaId.Value))
-            throw new BusinessException($"No existe la categoría con id {categoriaId}.", HttpStatusCode.NotFound);
-        var productos = await repository.GetAllAsync(categoriaId, buscar);
+        if (filtro.CategoriaId.HasValue && !await repository.ExisteCategoriaAsync(filtro.CategoriaId.Value))
+            throw new BusinessException($"No existe la categoría con id {filtro.CategoriaId}.", HttpStatusCode.NotFound);
         var hoy = DateOnly.FromDateTime(DateTime.Today);
-        return productos.Select(x => ToDto(x, hoy)).Where(x => !soloAlertas || x.Alertas.Count > 0)
+        var productos = await repository.GetAllAsync(filtro, hoy, diasVencimiento);
+        return productos.Select(x => ToDto(x, hoy))
             .OrderByDescending(x => x.Alertas.Count > 0).ThenBy(x => x.Nombre).ThenBy(x => x.ProductoId).ToList();
     }
 
@@ -60,14 +61,12 @@ public class StockService(IStockRepository repository, IConfiguration configurat
         return ToDto(producto, DateOnly.FromDateTime(DateTime.Today));
     }
 
-    public async Task<ResumenAlertasDto> GetAlertasAsync(string? tipo = null)
+    public async Task<ResumenAlertasDto> GetAlertasAsync(AlertaQueryFilter filtro)
     {
-        if (tipo is not null && !Tipos.Contains(tipo))
-            throw new BusinessException("Tipo inválido. Use SIN_STOCK, STOCK_BAJO, POR_VENCER o VENCIDO.");
-        var productos = await repository.GetAllAsync(null, null);
         var hoy = DateOnly.FromDateTime(DateTime.Today);
+        var productos = await repository.GetAlertasAsync(filtro, hoy, diasVencimiento);
         var items = productos.OrderBy(x => x.Nombre).ThenBy(x => x.Id)
-            .SelectMany(x => CalcularAlertas(x, hoy)).Where(x => tipo is null || x.Tipo == tipo).ToList();
+            .SelectMany(x => CalcularAlertas(x, hoy)).Where(x => filtro.Tipo is null || x.Tipo == filtro.Tipo).ToList();
         return new ResumenAlertasDto
         {
             Total = items.Count, SinStock = items.Count(x => x.Tipo == "SIN_STOCK"),

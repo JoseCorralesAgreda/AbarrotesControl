@@ -16,6 +16,45 @@
 @nombreProducto = Producto prueba CU02
 @idInexistente = 2147483647
 
+### Productos por nombre, categoría y estado (200)
+GET {{host}}/api/productos?nombre=Arroz&categoriaId={{categoriaId}}&activo=true
+
+### Stock con alertas (200)
+GET {{host}}/api/stock?soloAlertas=true
+
+### Alertas de stock bajo (200)
+GET {{host}}/api/alertas?tipo=STOCK_BAJO
+
+### Ventas por fechas inclusivas, máximo 50 (200)
+GET {{host}}/api/ventas?desde=2026-01-01&hasta=2026-12-31
+
+### Id de producto cero (400)
+GET {{host}}/api/productos/0
+
+### Id de entrada cero (400)
+GET {{host}}/api/entradas/0
+
+### Id de venta cero (400)
+GET {{host}}/api/ventas/0
+
+### Id de producto en stock cero (400)
+GET {{host}}/api/stock/0
+
+### Tipo inválido (400)
+GET {{host}}/api/alertas?tipo=XYZ
+
+### Categoría inválida en productos (400)
+GET {{host}}/api/productos?categoriaId=-1
+
+### Categoría inválida en stock (400)
+GET {{host}}/api/stock?categoriaId=-1
+
+### Rango de ventas invertido (400)
+GET {{host}}/api/ventas?desde=2026-12-31&hasta=2026-01-01
+
+### Fecha no convertible: mensaje de ModelState (400)
+GET {{host}}/api/ventas?desde=fecha-invalida
+
 ### CU-04: venta válida; producto activo, no vencido y con stock >= 1 (201)
 POST {{host}}/api/ventas
 Content-Type: application/json

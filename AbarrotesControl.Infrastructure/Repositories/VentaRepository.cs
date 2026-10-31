@@ -1,3 +1,4 @@
+using AbarrotesControl.Core.QueryFilters;
 using System.Net;
 using AbarrotesControl.Core.Entities;
 using AbarrotesControl.Core.Exceptions;
@@ -12,12 +13,26 @@ public class VentaRepository(AbarrotesControlContext context) : BaseRepository<V
     public Task<Venta?> GetByIdAsync(int id) => context.Ventas.AsNoTracking()
         .Include(x => x.Detalles).ThenInclude(x => x.Producto).FirstOrDefaultAsync(x => x.Id == id);
 
-    public Task<List<Venta>> GetAllAsync() => context.Ventas.AsNoTracking()
-        .Include(x => x.Detalles).ThenInclude(x => x.Producto)
-        .OrderByDescending(x => x.FechaVenta).ThenByDescending(x => x.Id).Take(50).ToListAsync();
+    public Task<List<Venta>> GetAllAsync(VentaQueryFilter filtro)
+    {
+        var query = context.Ventas.AsNoTracking()
+            .Include(x => x.Detalles).ThenInclude(x => x.Producto).AsQueryable();
+        if (filtro.Desde.HasValue)
+        {
+            var desde = filtro.Desde.Value.ToDateTime(TimeOnly.MinValue);
+            query = query.Where(x => x.FechaVenta >= desde);
+        }
+        if (filtro.Hasta.HasValue)
+        {
+            var hasta = filtro.Hasta.Value.ToDateTime(TimeOnly.MinValue);
+            query = query.Where(x => x.FechaVenta.Date <= hasta);
+        }
+        return query.OrderByDescending(x => x.FechaVenta).ThenByDescending(x => x.Id).Take(50).ToListAsync();
+    }
 
     public async Task<Venta> InsertAsync(Venta venta)
     {
+        // RN-15: guardar venta, descuento de stock y movimientos en una transacción.
         await using var transaction = await context.Database.BeginTransactionAsync();
         try
         {
@@ -25,6 +40,7 @@ public class VentaRepository(AbarrotesControlContext context) : BaseRepository<V
             await context.SaveChangesAsync();
             foreach (var detalle in venta.Detalles.OrderBy(x => x.ProductoId))
             {
+                // RN-15: descontar stock atómicamente solo si hay existencias suficientes.
                 var actualizados = await context.Productos
                     .Where(x => x.Id == detalle.ProductoId && x.Activo && x.StockActual >= detalle.Cantidad)
                     .ExecuteUpdateAsync(update => update.SetProperty(

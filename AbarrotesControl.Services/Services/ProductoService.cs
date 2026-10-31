@@ -1,3 +1,4 @@
+using AbarrotesControl.Core.QueryFilters;
 using System.Net;
 using AbarrotesControl.Core.Entities;
 using AbarrotesControl.Core.Exceptions;
@@ -12,7 +13,7 @@ namespace AbarrotesControl.Services.Services;
 public class ProductoService(IProductoRepository productos, IBaseRepository<Categoria> categorias,
     IConfiguration configuration) : IProductoService
 {
-    public async Task<IEnumerable<Producto>> GetAllAsync() => await productos.GetAllAsync();
+    public async Task<IEnumerable<Producto>> GetAllAsync(ProductoQueryFilter filtro) => await productos.GetAllAsync(filtro);
 
     public async Task<Producto> GetByIdAsync(int id) => await productos.GetByIdAsync(id)
         ?? throw new BusinessException($"No existe el producto con id {id}.", HttpStatusCode.NotFound);
@@ -21,9 +22,11 @@ public class ProductoService(IProductoRepository productos, IBaseRepository<Cate
     {
         if (await categorias.GetById(producto.CategoriaId) is null)
             throw new BusinessException($"No existe la categoría con id {producto.CategoriaId}.", HttpStatusCode.NotFound);
+        // RN-01: rechazar nombres de producto duplicados.
         if (await productos.ExisteNombreAsync(producto.Nombre))
             throw new BusinessException("Ya existe un producto con ese nombre", HttpStatusCode.Conflict);
 
+        // RN-05: todo producto inicia con stock cero.
         producto.StockActual = 0;
         producto.Activo = true;
         producto.FechaRegistro = DateTime.Now;

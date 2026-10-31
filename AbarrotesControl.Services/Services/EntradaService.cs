@@ -24,6 +24,7 @@ public class EntradaService(IEntradaRepository entradas, IBaseRepository<Proveed
             if (producto is null || !producto.Activo)
                 productosInvalidos.Add(detalle.ProductoId);
         }
+        // RN-08: exigir proveedor y productos existentes y activos.
         if (proveedorInvalido || productosInvalidos.Count > 0)
             throw new BusinessException(
                 "El proveedor o los productos indicados no existen o están inactivos (RN-08).",

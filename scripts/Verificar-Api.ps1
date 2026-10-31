@@ -32,6 +32,12 @@ function Test-Endpoint {
                 throw 'La respuesta no cumple el contrato ErrorResponse.'
             }
         }
+        if ($Status -eq 200 -and $Path.StartsWith('/api/')) {
+            $success = $response.Content | ConvertFrom-Json
+            if ('data' -notin $success.PSObject.Properties.Name) {
+                throw 'La respuesta no cumple el contrato ApiResponse<T>.'
+            }
+        }
         if ($Validation) {
             $json = $response.Content | ConvertFrom-Json
             if ($json.message -ne 'Error de validación' -or $json.errors.Count -lt 1) {
@@ -54,6 +60,28 @@ Test-Endpoint 'Interfaz web' '/'
 Test-Endpoint 'JavaScript' '/app.js'
 Test-Endpoint 'Estilos' '/styles.css'
 Test-Endpoint 'Listado de productos' '/api/productos'
+Test-Endpoint 'Productos por nombre y categoría' '/api/productos?nombre=Arroz&categoriaId=1'
+Test-Endpoint 'Productos activos' '/api/productos?activo=true'
+Test-Endpoint 'Productos inactivos' '/api/productos?activo=false'
+Test-Endpoint 'Stock por búsqueda' '/api/stock?buscar=Arroz'
+Test-Endpoint 'Ventas por rango inclusivo' '/api/ventas?desde=2026-01-01&hasta=2026-12-31'
+Test-Endpoint 'Ventas desde fecha' '/api/ventas?desde=2026-01-01'
+Test-Endpoint 'Ventas hasta fecha' '/api/ventas?hasta=2026-12-31'
+foreach ($ruta in @('productos', 'entradas', 'ventas', 'stock')) {
+    Test-Endpoint "Id cero en $ruta" "/api/$ruta/0" 400 -Validation
+    Test-Endpoint "Id negativo en $ruta" "/api/$ruta/-1" 400 -Validation
+}
+foreach ($ruta in @('productos', 'stock')) {
+    Test-Endpoint "Categoría negativa en $ruta" "/api/${ruta}?categoriaId=-1" 400 -Validation
+    Test-Endpoint "Categoría no convertible en $ruta" "/api/${ruta}?categoriaId=XYZ" 400 -Validation
+}
+$textoLargo = 'a' * 121
+Test-Endpoint 'Nombre mayor a 120' "/api/productos?nombre=$textoLargo" 400 -Validation
+Test-Endpoint 'Búsqueda mayor a 120' "/api/stock?buscar=$textoLargo" 400 -Validation
+Test-Endpoint 'Estado no convertible' '/api/productos?activo=XYZ' 400 -Validation
+Test-Endpoint 'Tipo XYZ' '/api/alertas?tipo=XYZ' 400 -Validation
+Test-Endpoint 'Rango invertido' '/api/ventas?desde=2026-12-31&hasta=2026-01-01' 400 -Validation
+Test-Endpoint 'Fecha no convertible' '/api/ventas?desde=XYZ' 400 -Validation
 Test-Endpoint 'Listado de categorías' '/api/categorias'
 Test-Endpoint 'Listado de proveedores' '/api/proveedores'
 Test-Endpoint 'Producto inexistente' '/api/productos/2147483647' 404
@@ -94,12 +122,12 @@ Test-Endpoint 'Stock activo' '/api/stock'
 Test-Endpoint 'Stock con alertas' '/api/stock?soloAlertas=true'
 Test-Endpoint 'Stock categoría inexistente' '/api/stock?categoriaId=2147483647' 404
 Test-Endpoint 'Stock producto inexistente' '/api/stock/2147483647' 404
-Test-Endpoint 'Stock filtro inválido' '/api/stock?soloAlertas=incorrecto' 400
+Test-Endpoint 'Stock filtro inválido' '/api/stock?soloAlertas=incorrecto' 400 -Validation
 Test-Endpoint 'Todas las alertas' '/api/alertas'
 foreach ($tipo in @('SIN_STOCK', 'STOCK_BAJO', 'POR_VENCER', 'VENCIDO')) {
     Test-Endpoint "Alertas $tipo" "/api/alertas?tipo=$tipo"
 }
-Test-Endpoint 'Tipo de alerta inválido' '/api/alertas?tipo=OTRO' 400
+Test-Endpoint 'Tipo de alerta inválido' '/api/alertas?tipo=OTRO' 400 -Validation
 Test-Endpoint 'RN-12 detalles vacíos' '/api/ventas' 400 @{ detalles = @() } -Validation
 Test-Endpoint 'RN-12 detalles nulos' '/api/ventas' 400 @{ detalles = $null } -Validation
 Test-Endpoint 'RN-12 línea nula' '/api/ventas' 400 @{ detalles = @($null) } -Validation

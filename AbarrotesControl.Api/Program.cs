@@ -1,3 +1,4 @@
+using AbarrotesControl.Core.QueryFilters;
 using AbarrotesControl.Api.Filters;
 using AbarrotesControl.Core.DTOs;
 using AbarrotesControl.Core.Interfaces;
@@ -53,6 +54,12 @@ public class Program
         builder.Services.AddScoped<IValidator<CrearDetalleEntradaDto>, CrearDetalleEntradaDtoValidator>();
         builder.Services.AddScoped<IValidator<CrearVentaDto>, CrearVentaDtoValidator>();
         builder.Services.AddScoped<IValidator<CrearDetalleVentaDto>, CrearDetalleVentaDtoValidator>();
+
+        builder.Services.AddScoped<IValidator<int>, IdParametroValidator>();
+        builder.Services.AddScoped<IValidator<ProductoQueryFilter>, ProductoQueryFilterValidator>();
+        builder.Services.AddScoped<IValidator<StockQueryFilter>, StockQueryFilterValidator>();
+        builder.Services.AddScoped<IValidator<AlertaQueryFilter>, AlertaQueryFilterValidator>();
+        builder.Services.AddScoped<IValidator<VentaQueryFilter>, VentaQueryFilterValidator>();
 
         var app = builder.Build();
 

@@ -1,3 +1,4 @@
+using AbarrotesControl.Core.QueryFilters;
 using AbarrotesControl.Core.DTOs;
 using AbarrotesControl.Core.Entities;
 
@@ -7,5 +8,5 @@ public interface IVentaService
 {
     Task<VentaDto> InsertAsync(Venta venta);
     Task<VentaDto> GetByIdAsync(int id);
-    Task<List<VentaDto>> GetAllAsync();
+    Task<List<VentaDto>> GetAllAsync(VentaQueryFilter filtro);
 }
